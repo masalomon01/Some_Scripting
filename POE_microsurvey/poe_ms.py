@@ -6,7 +6,6 @@ import json
 import requests
 import mysql.connector as mariadb
 from neo4j.v1 import GraphDatabase, basic_auth
-import ast
 
 
 rpt_db_cnxn = pyodbc.connect(config.RPTDB_CNXN)
@@ -29,9 +28,9 @@ def get_daily_poe_trips_from_db():
 	user_trip_data = {}
 	# For now we are only doing one user per trip due to limitations in microsurvey and repartdatabase
 	for row in data:
-		user trip data [metropian_id] = tripsummaryid, startaddress, endaddress, localstarttime 
+		# user trip data [metropian_id] = tripsummaryid, startaddress, endaddress, localstarttime 
 		#user_trip_data[row[1]] = row[0], row[2], row[3], row[4]
-	    # user_trip_data[335] = 1, 'poopstart', 'poopend', '2018-03-18 12:24:15' # testing
+	    user_trip_data[335] = 1, 'poopstart', 'poopend', '2018-03-18 12:24:15' # testing
 	
 	return user_trip_data
 
@@ -141,10 +140,11 @@ def prepare_payload(userid, q_id, q_title, answers, points, title):
 
 
 def send_to_PN(payload):
-    url = config.MS_PUSH_PD_URL
-    response = requests.post(url, data=payload, headers={"Content-Type": "application/json"})
-
-    return response.content
+	url = config.MS_PUSH_PD_URL
+	response = requests.post(url, data=payload, headers={"Content-Type": "application/json"})
+	response = json.loads(response.text)
+	
+	return response
 
 
 def morning_or_afternoon(crossing_date):
@@ -180,7 +180,6 @@ def send_ms_main(user_trip_dict):
 			payload = prepare_payload(uid, q_id, q_title, answers, points, title)
 			response = send_to_PN(payload)
 			# response = {"status": "success", "data": {"msg": "", "type": "push_notification", "user_id": 335}}
-			response = ast.literal_eval(response)
 			r_status = response["status"]
 			# print r_status
 			sql = """INSERT INTO poe_microsurvey (uid, tripid, poe, trip_duration, trip_date, question_id, question, points, status, add_date)
@@ -194,8 +193,8 @@ def send_ms_main(user_trip_dict):
 
 if __name__ == '__main__':
 	print('starting POE microsurvey')
-	daily_user_trips = get_daily_poe_trips_from_api()
-	# daily_user_trips = get_daily_poe_trips_from_db()
+	# daily_user_trips = get_daily_poe_trips_from_api()
+	daily_user_trips = get_daily_poe_trips_from_db()
 	do = send_ms_main(daily_user_trips)
 	print (do)
 
