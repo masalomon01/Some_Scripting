@@ -19,20 +19,20 @@ poe_db_cursor = poe_db_cnxn.cursor()
 
 def get_daily_poe_trips_from_db():
     # query daily list of trips
-    query = """ SELECT TOP 5 TripSummaryID, MetropianID, StartAddress, endaddress, localstarttime
-                FROM  rpttripsummary
-                WHERE LocalYYYYMMDD = '20180301' and TripMetroCity = 'ElPaso' and StartCity = 'Juarez' 
-                    and EndCity = 'ElPaso' and DistanceFromTrajectory > 1 """
-    rpt_db_cursor.execute(query)
-    data = rpt_db_cursor.fetchall()
-    user_trip_data = {}
-    # For now we are only doing one user per trip due to limitations in microsurvey and repartdatabase
-    for row in data:
-        # user trip data [metropian_id] = tripsummaryid, startaddress, endaddress, localstarttime 
-        # user_trip_data[row[1]] = row[0], row[2], row[3], row[4]
-        user_trip_data[335] = 1, 'poopstart', 'poopend', datetime.now() # testing
-    
-    return user_trip_data
+	query = """ SELECT TOP 5 TripSummaryID, MetropianID, StartAddress, endaddress, localstarttime
+				FROM  rpttripsummary
+				 WHERE LocalYYYYMMDD = '20180301' and TripMetroCity = 'ElPaso' and StartCity = 'Juarez' 
+				and EndCity = 'ElPaso' and DistanceFromTrajectory > 1 """
+	rpt_db_cursor.execute(query)
+	data = rpt_db_cursor.fetchall()
+	user_trip_data = {}
+	# For now we are only doing one user per trip due to limitations in microsurvey and repartdatabase
+	for row in data:
+		# user trip data [metropian_id] = tripsummaryid, startaddress, endaddress, localstarttime 
+		#user_trip_data[row[1]] = row[0], row[2], row[3], row[4]
+	    user_trip_data[335] = 1, 'poopstart', 'poopend', '2018-03-18 12:24:15' # testing
+	
+	return user_trip_data
 
 
 def get_daily_poe_trips_from_api():
@@ -146,6 +146,21 @@ def send_to_PN(payload):
     return response.content
 
 
+def morning_or_afternoon(crossing_date):
+	parts_of_the_day = {'in the early morning on':[1,2,3,4,5], 'in the morning on':[6,7,8,9,10,11], 'around noon on':[12], 
+						'in the afternoon on':[13,14,15,16,17], 'in the evening on':[18,19,20], 'in the night of':[21,22,23], 'around midnight on':[0]}
+	# am_pm = crossing_date.strftime("%p")
+	# hour = "{:d}:{:02d} {}".format(crossing_date.hour, crossing_date.minute, am_pm.lower())
+	date = '{dt:%A}, {dt:%B} {dt.day}{s}'.format(dt=crossing_date, s=suffix(crossing_date.day))
+	hour = int(crossing_date.hour)
+	for k, v in parts_of_the_day.iteritems():
+		if hour in v:
+			part_of_day = k
+	partofday_date = ' {} {}?'.format(part_of_day, date)
+
+	return partofday_date
+
+
 def send_ms_main(user_trip_dict):
 	q_id = config.QUESTION_ID
 	question_title = str(get_question_title(q_id))
@@ -157,20 +172,17 @@ def send_ms_main(user_trip_dict):
 		# print (check_user_on_db(uid)) 
 		if check_user_on_db(uid) == True:
 			crossing_date = datetime.strptime(value[3], '%Y-%m-%d %H:%M:%S')
-			am_pm = crossing_date.strftime("%p")
-			date = '{dt:%A}, {dt:%B} {dt.day}{s}'.format(dt=crossing_date, s=suffix(crossing_date.day))
-			hour = "{:d}:{:02d} {}".format(crossing_date.hour, crossing_date.minute, am_pm.lower())
-			hour_date = ' {} on {}?'.format(hour, date)
+			hour_date = morning_or_afternoon(crossing_date)
 			q_title = ''
 			q_title = question_title + hour_date
 			# print (q_title)
 			payload = prepare_payload(uid, q_id, q_title, answers, points, title)
-			# response = send_to_PN(payload)
-			response = {"status": "success", "data": {"msg": "", "type": "push_notification", "user_id": 335}}
-			print response['status']
+			response = send_to_PN(payload)
+			# response = {"status": "success", "data": {"msg": "", "type": "push_notification", "user_id": 335}}
+			print response
+			print response["status"]
 			sql = """INSERT INTO poe_microsurvey (uid, tripid, poe, trip_duration, trip_date, question_id, question, points, status, add_date)
 			VALUES (%s, '%s', '%s', '%s', '%s', %s, '%s', %s, '%s', '%s')""" % (uid, value[0], value[1], value[2], crossing_date, q_id, q_title, points, response['status'], datetime.now())
-			print sql
 			poe_db_cursor.execute(sql)
 		else:
 			pass
@@ -180,8 +192,8 @@ def send_ms_main(user_trip_dict):
 
 if __name__ == '__main__':
 	print('starting POE microsurvey')
-	daily_user_trips = get_daily_poe_trips_from_api()
-	#daily_user_trips = get_daily_poe_trips_from_db()
+	#daily_user_trips = get_daily_poe_trips_from_api()
+	daily_user_trips = get_daily_poe_trips_from_db()
 	do = send_ms_main(daily_user_trips)
 	print (do)
 
