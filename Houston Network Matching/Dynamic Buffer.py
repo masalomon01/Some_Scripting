@@ -1,11 +1,11 @@
 import time
 import arcpy
 
-arcpy.env.workspace= "D:/Will/GIS Data/Network Matching/OSM and PTV/Tucson/3-7-2016/data.gdb"
-fc= "metropia_toPoints"
-fc2= "metropia_split_pcs"
+arcpy.env.workspace= "C:/Users/Mario/Documents/GitHub/Some_Scripting/Houston Network Matching/data2.gdb"
+fc= "OSM_toPoints"
+fc2= "OSM_split"
 
-ID= "LinkID_par"
+ID= "gid"
 Dist= "N_dist"
 DistDict= {}
 
@@ -19,7 +19,7 @@ for row in cursor:
 del row
 del cursor
 
-out=open('D:/Will/GIS Data/Network Matching/OSM and PTV/Tucson/3-7-2016/Buffdist.txt','w')
+out=open('C:/Users/Mario/Documents/GitHub/Some_Scripting/Houston Network Matching/Buffdist.txt','w')
 
 for key in DistDict:
     out.write(str(key))
@@ -28,8 +28,8 @@ for key in DistDict:
     out.write('\n')
 
 out.close()
-print "distance extraction complete!"
-print time.ctime()
+print ("distance extraction complete!")
+print (time.ctime())
 
 starttime=time.clock()
 
@@ -45,8 +45,9 @@ for row in cursor:
 
 endtime= time.clock()
 
-print time.ctime()
-print "update finished in %d seconds" % (endtime-starttime)
+print (time.ctime())
+update_time =  "update finished in %d seconds" % (endtime-starttime)
+print (update_time)
 
 del row
 del cursor

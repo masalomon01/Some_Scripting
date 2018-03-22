@@ -28,7 +28,7 @@ def isFlag(dir1,dir2):
 
 
 
-arcpy.env.workspace = "D:/Will/GIS Data/network_matching/OSM and PTV/Tucson/3-7-2016/data.gdb"
+arcpy.env.workspace = "C:/Users/Mario/Documents/GitHub/Some_Scripting/Houston Network Matching/data.gdb"
 fc = "Identity"
 
 arcpy.AddField_management(fc,"B_flag","SHORT")
