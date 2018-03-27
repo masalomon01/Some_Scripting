@@ -45,7 +45,7 @@ def get_daily_poe_trips_from_api():
 	trips_l = data['data']['crossing_trips']
 	for trip in trips_l:
 		if trip['direction'] == 0:
-			uid, tripid = trip['user_id'], trip['trip_id']
+			uid, tripid = trip['user_id'], trip['trip_reservation_id']
 			poe, duration = trip['poe'], trip['trip_duration']
 			crossing_time = trip["crossing_datetime"]
 			if duration is None or tripid is None:
@@ -120,7 +120,7 @@ def prepare_payload(userid, q_id, q_title, answers, points, title):
 			"message": {
 				"type": "microsurvey",
 				"user_id": userid,
-				"message": "Answer this quick question to earn reward points!",
+				"message": "Answer this quick question to earn %s reward points!" % (points) ,
 				"question": {
 					"id": q_id,
 					"type": 1, 					
@@ -194,7 +194,7 @@ def send_ms_main(user_trip_dict):
 if __name__ == '__main__':
 	print('starting POE microsurvey')
 	daily_user_trips = get_daily_poe_trips_from_api()
-	#daily_user_trips = get_daily_poe_trips_from_db()
+	# daily_user_trips = get_daily_poe_trips_from_db()
 	do = send_ms_main(daily_user_trips)
 	print (do)
 
