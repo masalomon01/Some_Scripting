@@ -19,7 +19,7 @@ my_db_cursor = my_db_cnxn.cursor()
 
 def get_trips_from_db():
     # get's all trips that need zones
-    query = """ SELECT TOP 5 MetropianID, MetropianID+1117 as random_id, routedistance, DistanceFromTrajectory, EstimateTravelTime, 
+    query = """ SELECT TOP 100 MetropianID, MetropianID+1117 as random_id, routedistance, DistanceFromTrajectory, EstimateTravelTime, 
                 actualMin5, localstarttime, localtripendtime, localhh, localweekday, LocalWW, localmm, localyyyy, startcity, 
                 EndCity, StartLatitude, StartLongitude, EndLatitude, EndLongitude, TripSummaryID
 				FROM  rpttripsummary
@@ -111,25 +111,24 @@ def write_to_csv(row):
     f.close()
 
 
-def main(trips_lol):
+def main(trip):
     # this is the main function that will loop over all the trips
     last = check_last_trip() 
-    for trip in trips_lol:
-        if int(trip[0]) > last: # this makes sure we pick up from the last trip we checked
-            start_zone = find_od_zones(trip[16], trip[17]) 
-            end_zone = find_od_zones(trip[18], trip[19])
-            zones = [start_zone, end_zone]
-            row = trip + zones
-            write_to_csv(row)
-            write_to_db(row)
-            record_last_trip(trip[0])
-  
+    if int(trip[0]) > last: # this makes sure we pick up from the last trip we checked
+        start_zone = find_od_zones(trip[16], trip[17]) 
+        end_zone = find_od_zones(trip[18], trip[19])
+        zones = [start_zone, end_zone]
+        row = trip + zones
+        write_to_csv(row)
+        write_to_db(row)
+        record_last_trip(trip[0])
+    else:
+        pass
+
     return 'done'
 
 
 if __name__ == '__main__':
-
-    
     print('starting OD Geocoding')
     start = time.time()
     trips = get_trips()
