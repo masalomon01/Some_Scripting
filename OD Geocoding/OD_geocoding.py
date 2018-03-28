@@ -108,7 +108,7 @@ def write_to_csv(row):
         with open(r'final_output.csv', 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(row)
-    f.close()
+    #f.close()
 
 
 def main(trip):
@@ -132,11 +132,10 @@ if __name__ == '__main__':
     print('starting OD Geocoding')
     start = time.time()
     trips = get_trips()
-    pool = Pool(4)
     get_trips_end = time.time()
     print('getting the trips took', get_trips_end - start)
-    pool = Pool(4)
-    print (pool.map(main, trips))
+    pool = Pool(8)
+    pool.map(main, trips)
     #done = main(trips)
     end = time.time()
     print('main zone write loop took', end - start)
