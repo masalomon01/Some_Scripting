@@ -7,6 +7,7 @@ import requests
 import mysql.connector as mariadb
 import time
 import sys
+from multiprocessing.pool import Pool
 
 
 rpt_db_cnxn = pyodbc.connect(config.RPTDB_CNXN)
@@ -18,7 +19,7 @@ my_db_cursor = my_db_cnxn.cursor()
 
 def get_trips_from_db():
     # get's all trips that need zones
-    query = """ SELECT TOP 100 MetropianID, MetropianID+1117 as random_id, routedistance, DistanceFromTrajectory, EstimateTravelTime, 
+    query = """ SELECT TOP 5 MetropianID, MetropianID+1117 as random_id, routedistance, DistanceFromTrajectory, EstimateTravelTime, 
                 actualMin5, localstarttime, localtripendtime, localhh, localweekday, LocalWW, localmm, localyyyy, startcity, 
                 EndCity, StartLatitude, StartLongitude, EndLatitude, EndLongitude, TripSummaryID
 				FROM  rpttripsummary
@@ -83,14 +84,14 @@ def find_od_zones(lat, lon):
     return zone
 
 
-def write_to_db(data):
+def write_to_db(trip):
     # this function writes the new data on the DB
     sql = """INSERT INTO od_geocoding (tripid, uid, random_id, routedistance, tripdistance, estimate_tt, actual_tt, local_start_time, local_end_time, local_hh, 
             local_weekday, local_ww, local_mm, localyyyy, startcity, endcity, startlat, startlon, endlat, endlon, startzone, endzone)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""" 
-            #  % (trip[0], trip[1], trip[2], trip[3], trip[4], trip[5], trip[6], trip[7], trip[8], trip[9], trip[10], trip[11], trip[12], trip[13], trip[14], trip[15], O_zone, D_zone)
-    my_db_cursor.executemany(sql, data)
-    # my_db_cursor.execute(sql)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, '%s', '%s', %s, '%s', %s, %s, %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 
+            '%s')"""  % (trip[0], trip[1], trip[2], trip[3], trip[4], trip[5], trip[6], trip[7], trip[8], trip[9], trip[10], trip[11], trip[12], trip[13], trip[14], trip[15], trip[16], trip[17], trip[18], trip[19], trip[20], trip[21])
+    #my_db_cursor.executemany(sql, data)
+    my_db_cursor.execute(sql)
     my_db_cnxn.commit()
 
 
@@ -111,11 +112,8 @@ def write_to_csv(row):
 
 
 def main(trips_lol):
-    oldtime = time.time()
     # this is the main function that will loop over all the trips
     last = check_last_trip() 
-    batch = []
-    batch_cnt = 0     # we are going to be writing the data to the db in batches. 
     for trip in trips_lol:
         if int(trip[0]) > last: # this makes sure we pick up from the last trip we checked
             start_zone = find_od_zones(trip[16], trip[17]) 
@@ -125,26 +123,22 @@ def main(trips_lol):
             write_to_csv(row)
             write_to_db(row)
             record_last_trip(trip[0])
-            if batch_cnt == 10:     # this means that the size of the batch to write is 100 rows
-                write_to_db(batch)
-                newtime = time.time()
-                print ('just wrote a total of', len(batch), newtime - oldtime)
-                oldtime = time.time()
-                batch, batch_cnt = [], 0
-            else:
-                batch_cnt = batch_cnt + 1  
-    write_to_db(batch)      #this command will write the rest of the batches after the main loop is done
-    write_to_csv(batch)   
+  
     return 'done'
 
 
 if __name__ == '__main__':
+
+    
     print('starting OD Geocoding')
     start = time.time()
     trips = get_trips()
+    pool = Pool(4)
     get_trips_end = time.time()
     print('getting the trips took', get_trips_end - start)
-    done = main(trips)
+    pool = Pool(4)
+    print (pool.map(main, trips))
+    #done = main(trips)
     end = time.time()
     print('main zone write loop took', end - start)
-    print (done)
+    print ('done')
