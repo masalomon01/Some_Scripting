@@ -19,7 +19,7 @@ my_db_cursor = my_db_cnxn.cursor()
 
 def get_trips_from_db():
     # get's all trips that need zones
-    query = """ SELECT TOP 100 MetropianID, MetropianID+1117 as random_id, routedistance, DistanceFromTrajectory, EstimateTravelTime, 
+    query = """ SELECT MetropianID, MetropianID+1117 as random_id, routedistance, DistanceFromTrajectory, EstimateTravelTime, 
                 actualMin5, localstarttime, localtripendtime, localhh, localweekday, LocalWW, localmm, localyyyy, startcity, 
                 EndCity, StartLatitude, StartLongitude, EndLatitude, EndLongitude, TripSummaryID
 				FROM  rpttripsummary
@@ -59,6 +59,9 @@ def check_last_trip():
     else:
         text_file = open('last_trip.txt', 'r')
         lastrip_id = text_file.readline()
+        while lastrip_id == '':
+            lastrip_id = check_last_trip
+            print('while loop calling itself')
 
     return int(lastrip_id)
 
@@ -71,12 +74,12 @@ def record_last_trip(trip_id):
 
 def find_od_zones(lat, lon):
     # this function will define the origin zone and destination zone
-    # https://network-production.herokuapp.com/api/v1.5/census?city=elpaso&lat=31.7851667&lon=-106.4707744
+    # https://network-developer.herokuapp.com/api/v1.5/elpasotaz?lon=-106.385386&lat=31.757498
     lat_lon = 'lat={}&lon={}'.format(lat, lon)
     api = pip_api  + lat_lon
     try:
         r = requests.get(api)
-        zone = r.json()['zone_id']
+        zone = r.json()['metropiaod']
     except:
         # print ('zone outside census', lat, lon)
         zone = 'NA'
@@ -111,19 +114,20 @@ def write_to_csv(row):
     #f.close()
 
 
-def main(trip):
+def main(trips):
     # this is the main function that will loop over all the trips
-    last = check_last_trip() 
-    if int(trip[0]) > last: # this makes sure we pick up from the last trip we checked
-        start_zone = find_od_zones(trip[16], trip[17]) 
-        end_zone = find_od_zones(trip[18], trip[19])
-        zones = [start_zone, end_zone]
-        row = trip + zones
-        write_to_csv(row)
-        write_to_db(row)
-        record_last_trip(trip[0])
-    else:
-        pass
+    last = check_last_trip()
+    for trip in trips:
+        if int(trip[0]) > last: # this makes sure we pick up from the last trip we checked
+            start_zone = find_od_zones(trip[16], trip[17]) 
+            end_zone = find_od_zones(trip[18], trip[19])
+            zones = [start_zone, end_zone]
+            row = trip + zones
+            write_to_csv(row)
+            write_to_db(row)
+            record_last_trip(trip[0])
+        else:
+            pass
 
     return 'done'
 
@@ -134,9 +138,12 @@ if __name__ == '__main__':
     trips = get_trips()
     get_trips_end = time.time()
     print('getting the trips took', get_trips_end - start)
-    pool = Pool(8)
-    pool.map(main, trips)
-    #done = main(trips)
+
+    #pool = Pool(2)
+    #pool.map(main, trips)
+    done = main(trips)
+
     end = time.time()
     print('main zone write loop took', end - start)
+    
     print ('done')
