@@ -193,8 +193,8 @@ def send_ms_main(user_trip_dict):
 
 if __name__ == '__main__':
 	print('starting POE microsurvey')
-	daily_user_trips = get_daily_poe_trips_from_api()
-	# daily_user_trips = get_daily_poe_trips_from_db()
+	# daily_user_trips = get_daily_poe_trips_from_api()
+	daily_user_trips = get_daily_poe_trips_from_db()
 	do = send_ms_main(daily_user_trips)
 	print (do)
 

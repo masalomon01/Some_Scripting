@@ -108,4 +108,7 @@ ENV/
 config.py
 .env
 AECOM.gdb/
-Barebones1KM/
+data.gdb/
+data2.gdb/
+AECOM shp/
+Houston_OSM_shp/
